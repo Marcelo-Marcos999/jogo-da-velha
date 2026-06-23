@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Jogo da Velha</h1>
+        <div class="game-board">
+            <div class="square" id="square-1"></div>
+            <div class="square" id="square-2"></div>
+            <div class="square" id="square-3"></div>
+            <div class="square" id="square-4"></div>
+            <div class="square" id="square-5"></div>
+            <div class="square" id="square-6"></div>
+            <div class="square" id="square-7"></div>
+            <div class="square" id="square-8"></div>
+            <div class="square" id="square-9"></div>
+        </div>
+        <div class="stats">
+            <p>Vitórias: <span id="wins">0</span></p>
+            <p>Derrotas: <span id="losses">0</span></p>
+            <p>Empates: <span id="draws">0</span></p>
+        </div>
+        <button id="restart-button">Reiniciar</button>
+    </div>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
