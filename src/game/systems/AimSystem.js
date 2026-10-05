@@ -27,18 +27,35 @@ export class AimSystem {
   update(tank, input, dt) {
     if (!tank.alive) return;
 
-    this.ndc.set(input.mouse.ndcX, input.mouse.ndcY);
-    this.raycaster.setFromCamera(this.ndc, this.renderer.camera);
+    let targetWorldYaw = null;
 
-    const hit = this.raycaster.ray.intersectPlane(this.groundPlane, this.point);
-    this.hasTarget = !!hit;
-    if (!hit) return;
+    // Mira por touch: o joystick direito aponta uma direção relativa ao casco
+    // (frente = +y, direita = +x). A câmera fica atrás do tanque, então a
+    // direção na tela equivale à direção no mundo relativa ao casco.
+    const aim = input.touch && input.touch.aim;
+    if (aim && aim.active && aim.x * aim.x + aim.y * aim.y > 0.02) {
+      targetWorldYaw = tank.yaw + Math.atan2(aim.x, aim.y);
+      // Projeta um ponto à frente para o indicador de alvo válido.
+      this.point.set(
+        tank.position.x + Math.sin(targetWorldYaw) * 20,
+        0,
+        tank.position.z + Math.cos(targetWorldYaw) * 20,
+      );
+      this.hasTarget = true;
+    } else {
+      this.ndc.set(input.mouse.ndcX, input.mouse.ndcY);
+      this.raycaster.setFromCamera(this.ndc, this.renderer.camera);
 
-    const dx = this.point.x - tank.position.x;
-    const dz = this.point.z - tank.position.z;
-    if (dx * dx + dz * dz < 1e-4) return;
+      const hit = this.raycaster.ray.intersectPlane(this.groundPlane, this.point);
+      this.hasTarget = !!hit;
+      if (!hit) return;
 
-    const targetWorldYaw = Math.atan2(dx, dz);
+      const dx = this.point.x - tank.position.x;
+      const dz = this.point.z - tank.position.z;
+      if (dx * dx + dz * dz < 1e-4) return;
+      targetWorldYaw = Math.atan2(dx, dz);
+    }
+
     const diff = normalizeAngle(targetWorldYaw - tank.worldTurretYaw);
     const maxStep = tank.profile.turretSpeed * dt;
     tank.turretYaw += clamp(diff, -maxStep, maxStep);

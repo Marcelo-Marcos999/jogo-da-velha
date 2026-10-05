@@ -23,6 +23,18 @@ export const PROJECTILE = {
   radius: 0.35,
 };
 
+// Configuração da câmera (CameraRig). O pitch é o ângulo de elevação da câmera
+// em relação ao plano do chão, em graus: valores menores = visão mais
+// horizontal, valores maiores = visão mais de cima.
+export const CAMERA = {
+  pitchDefault: 25, // inclinação inicial (mais horizontal que o antigo ~45°)
+  pitchMin: 10, // limite inferior (mais horizontal)
+  pitchMax: 60, // limite superior (mais vertical)
+  pitchStep: 3, // incremento por input (teclado/roda/botões touch)
+  pitchSmoothing: 6, // suavização da interpolação até o valor alvo
+  storageKey: 'tank3d.camera.pitch.v1', // chave versionada no localStorage
+};
+
 // Perfis de tanque. Novas classes de tanque (etapas 2-5) = novos objetos aqui.
 export const TANK_PROFILES = {
   player: {
@@ -74,6 +86,29 @@ export const ENEMY = {
     color: 0xb0413a,
     turretColor: 0x7f2b26,
   },
+};
+
+// Configuração das ondas (Etapa 3). Cada onda define quantidade de inimigos,
+// intervalo de spawn e multiplicadores de dificuldade (vida, velocidade e
+// cadência de tiro). Ondas além das listadas escalam automaticamente.
+export const WAVES = {
+  total: 5, // sobreviver a N ondas = vitória
+  countdown: 3, // intervalo entre ondas (s)
+  waves: [
+    { enemies: 3, spawnInterval: 1.4, healthMul: 1.0, speedMul: 1.0, fireRateMul: 1.0 },
+    { enemies: 4, spawnInterval: 1.2, healthMul: 1.15, speedMul: 1.05, fireRateMul: 1.1 },
+    { enemies: 5, spawnInterval: 1.0, healthMul: 1.3, speedMul: 1.1, fireRateMul: 1.2 },
+    { enemies: 6, spawnInterval: 0.9, healthMul: 1.5, speedMul: 1.15, fireRateMul: 1.3 },
+    { enemies: 7, spawnInterval: 0.8, healthMul: 1.75, speedMul: 1.2, fireRateMul: 1.45 },
+  ],
+};
+
+// Pontuação e progressão de sessão (Etapa 3).
+export const SCORE = {
+  storageKey: 'tank3d.highscore.v1', // chave versionada no localStorage
+  enemyValue: { enemy: 100, default: 100 }, // pontos por tipo de inimigo
+  waveBonus: 250, // bônus por onda concluída (x número da onda)
+  accuracyBonus: 500, // bônus máximo por precisão (100% de acertos)
 };
 
 export const FIXED_STEP = 1 / 60;

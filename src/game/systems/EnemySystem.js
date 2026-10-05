@@ -26,8 +26,10 @@ export class EnemySystem {
     }
   }
 
-  spawnAt(point) {
-    const enemy = new EnemyTank(this.config.profile, {
+  // Cria um inimigo em um ponto. Aceita um perfil alternativo (usado pelo
+  // WaveSystem para aplicar os multiplicadores de dificuldade da onda).
+  spawnAt(point, profileOverride = null) {
+    const enemy = new EnemyTank(profileOverride || this.config.profile, {
       x: point.x,
       z: point.z,
       yaw: Math.random() * Math.PI * 2,

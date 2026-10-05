@@ -42,14 +42,18 @@ body,
   user-select: none;
 }
 
-.hud-top {
+/* Barra fina única que agrupa as estatísticas essenciais, ancorada no topo
+   esquerdo para não cobrir a mira (centro) nem os controles touch (base). */
+.hud-bar {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  right: 16px;
+  top: clamp(6px, 1.2vh, 14px);
+  left: clamp(6px, 1.2vw, 16px);
   display: flex;
-  gap: 12px;
+  align-items: center;
   flex-wrap: wrap;
+  gap: clamp(4px, 0.6vw, 8px);
+  max-width: calc(100% - clamp(120px, 22vw, 260px));
+  pointer-events: none;
 }
 
 /* Vinheta vermelha ao receber dano. */
@@ -71,16 +75,33 @@ body,
   transition: opacity 0.05s ease-in;
 }
 
-.hud-panel {
+/* Cada estatística é uma "chip" compacta dentro da barra. */
+.hud-chip {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 150px;
-  padding: 10px 14px;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  font-size: clamp(0.68rem, 1.5vw, 0.82rem);
+  line-height: 1.1;
+  white-space: nowrap;
   background: rgba(12, 18, 26, 0.72);
   border: 1px solid rgba(120, 160, 200, 0.25);
-  border-radius: 10px;
+  border-radius: 999px;
   backdrop-filter: blur(4px);
+}
+
+.hud-chip.reloading {
+  border-color: rgba(66, 165, 245, 0.6);
+}
+
+.hud-chip.reloading .hud-icon {
+  color: #42a5f5;
+}
+
+.hud-icon {
+  font-size: 1em;
+  line-height: 1;
+  color: #8fa6bd;
 }
 
 .hud-label {
@@ -100,12 +121,33 @@ body,
   letter-spacing: 1px;
 }
 
+/* Dentro das chips, o texto herda a escala compacta da barra. */
+.hud-chip .hud-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.hud-chip .hud-value.big {
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+}
+
 .health-bar {
   width: 100%;
   height: 10px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 6px;
   overflow: hidden;
+}
+
+.hud-chip .health-bar {
+  width: clamp(46px, 8vw, 96px);
+  height: 8px;
+}
+
+.hud-chip .reload-bar {
+  width: clamp(32px, 6vw, 62px);
+  height: 6px;
 }
 
 .health-fill {
@@ -133,10 +175,154 @@ body,
   overflow: hidden;
 }
 
+.reload-bar.active {
+  background: rgba(66, 165, 245, 0.25);
+}
+
 .reload-fill {
   height: 100%;
   background: #42a5f5;
   transition: width 0.1s linear;
+}
+
+/* ---- Mira central ---- */
+
+.reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.reticle-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  transform: translate(-50%, -50%);
+}
+
+.reticle-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.reticle.valid .reticle-ring {
+  border-color: #ff5252;
+  transform: scale(0.82);
+}
+
+.reticle.valid .reticle-dot {
+  background: #ff5252;
+}
+
+/* ---- Contagem regressiva entre ondas ---- */
+
+.wave-countdown {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 22px;
+  background: rgba(12, 18, 26, 0.7);
+  border: 1px solid rgba(120, 160, 200, 0.3);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.wave-countdown-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8fa6bd;
+}
+
+.wave-countdown-value {
+  font-size: 34px;
+  font-weight: 700;
+  color: #7fd18a;
+}
+
+/* ---- Scoreboard ---- */
+
+.scoreboard {
+  position: absolute;
+  top: clamp(6px, 1.2vh, 14px);
+  right: clamp(6px, 1.2vw, 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.28rem 0.55rem;
+  font-size: clamp(0.68rem, 1.5vw, 0.82rem);
+  background: rgba(12, 18, 26, 0.72);
+  border: 1px solid rgba(120, 160, 200, 0.25);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.scoreboard-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scoreboard-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(120, 160, 200, 0.2);
+}
+
+.scoreboard-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.scoreboard-item .hud-value {
+  font-size: 0.95rem;
+}
+
+.scoreboard-item .hud-value.big {
+  font-size: 1.05rem;
+}
+
+.scoreboard-toggle {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  margin-left: 0.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: #cfe0ee;
+  background: rgba(120, 160, 200, 0.18);
+  border: 1px solid rgba(120, 160, 200, 0.4);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.scoreboard-toggle:hover {
+  background: rgba(120, 160, 200, 0.34);
 }
 
 .hud-hint {
@@ -212,22 +398,214 @@ body,
   transform: translateY(0);
 }
 
+.btn.ghost {
+  color: #cfe0ee;
+  background: rgba(120, 160, 200, 0.18);
+  border: 1px solid rgba(120, 160, 200, 0.4);
+}
+
+.btn.ghost:hover {
+  background: rgba(120, 160, 200, 0.3);
+}
+
+.overlay-controls {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #a9bccd;
+  font-size: 14px;
+}
+
+.overlay-controls b {
+  color: #dbe7f2;
+}
+
+.overlay-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.overlay-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ---- Controles touch (mobile) ---- */
+
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.joystick {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: rgba(12, 18, 26, 0.4);
+  border: 2px solid rgba(120, 160, 200, 0.35);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.joystick-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #8fa6bd;
+}
+
+.joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: rgba(127, 209, 138, 0.75);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.touch-right {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.touch-right .joystick {
+  position: relative;
+  bottom: auto;
+  left: auto;
+}
+
+.touch-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.touch-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(12, 18, 26, 0.55);
+  color: #e8eef5;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.touch-btn.fire {
+  background: rgba(229, 57, 53, 0.75);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.touch-btn.fire.reloading {
+  background: rgba(66, 165, 245, 0.6);
+}
+
+.touch-btn.pause {
+  width: 52px;
+  height: 52px;
+  align-self: flex-end;
+  font-size: 16px;
+}
+
+.fire-reload {
+  font-size: 15px;
+}
+
+/* Coluna de ajuste da câmera (mobile): fica na borda direita, centralizada
+   verticalmente, longe dos joysticks e do botão de tiro. */
+.touch-camera {
+  position: absolute;
+  top: 50%;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.touch-btn.camera {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+  line-height: 1;
+  background: rgba(12, 18, 26, 0.55);
+}
+
+/* Botão de reset da câmera, compacto e inline na barra. */
+.camera-reset {
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: #cfe0f0;
+  background: rgba(66, 165, 245, 0.25);
+  border: 1px solid rgba(120, 160, 200, 0.45);
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.camera-reset:hover {
+  background: rgba(66, 165, 245, 0.4);
+}
+
 /* ---- Responsividade ---- */
 
-/* Telas pequenas (celular): HUD compacto e empilhado. */
+/* Telas pequenas (celular): HUD compacto no topo, ocupando pouca altura. */
 @media (max-width: 640px) {
-  .hud-top {
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    gap: 6px;
+  .hud-bar {
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    max-width: none;
+    gap: 4px;
+    max-height: 15vh;
   }
 
-  .hud-panel {
-    min-width: 0;
-    flex: 1 1 calc(50% - 6px);
-    padding: 6px 10px;
-    gap: 4px;
+  .hud-chip {
+    padding: 0.2rem 0.45rem;
+    gap: 0.3rem;
+    font-size: clamp(0.62rem, 2.5vw, 0.78rem);
+  }
+
+  .hud-chip .hud-value {
+    font-size: 0.85rem;
+  }
+
+  .hud-chip .hud-value.big {
+    font-size: 0.95rem;
   }
 
   .hud-label {
@@ -245,6 +623,15 @@ body,
 
   .health-bar {
     height: 8px;
+  }
+
+  .hud-chip .health-bar {
+    width: clamp(38px, 13vw, 68px);
+    height: 7px;
+  }
+
+  .hud-chip .reload-bar {
+    width: clamp(26px, 9vw, 48px);
   }
 
   .hud-hint {
@@ -269,22 +656,89 @@ body,
     padding: 0 16px;
     font-size: 14px;
   }
+
+  /* Permanece no topo direito, compacto, sem colidir com os controles touch
+     (que ficam na base da tela). */
+  .scoreboard {
+    top: 6px;
+    right: 6px;
+    left: auto;
+    bottom: auto;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.22rem 0.45rem;
+  }
+
+  .scoreboard-header {
+    gap: 0.4rem;
+  }
+
+  .joystick {
+    width: 100px;
+    height: 100px;
+    bottom: 14px;
+    left: 14px;
+  }
+
+  .joystick-knob {
+    width: 42px;
+    height: 42px;
+    margin: -21px 0 0 -21px;
+  }
+
+  .touch-right {
+    bottom: 14px;
+    right: 14px;
+    gap: 8px;
+  }
+
+  .touch-btn {
+    width: 58px;
+    height: 58px;
+    font-size: 12px;
+  }
+
+  .touch-btn.pause {
+    width: 42px;
+    height: 42px;
+  }
+
+  .touch-camera {
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    gap: 8px;
+  }
+
+  .touch-btn.camera {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
 }
 
 /* Celular em paisagem: HUD em linha única e compacto. */
 @media (max-height: 480px) and (orientation: landscape) {
-  .hud-top {
-    top: 6px;
-    left: 6px;
-    right: 6px;
-    gap: 6px;
+  .hud-bar {
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    gap: 4px;
     flex-wrap: nowrap;
+    max-width: none;
+    max-height: 15vh;
   }
 
-  .hud-panel {
-    min-width: 0;
-    flex: 1 1 0;
-    padding: 4px 8px;
+  .hud-chip {
+    padding: 0.18rem 0.4rem;
+    font-size: clamp(0.58rem, 1.8vh, 0.74rem);
+  }
+
+  .hud-chip.state {
+    display: none;
+  }
+
+  .scoreboard {
+    top: 5px;
+    right: 5px;
   }
 
   .hud-hint {
