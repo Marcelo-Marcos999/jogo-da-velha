@@ -20,6 +20,8 @@ const Hud = ({
   onMove,
   onAim,
   onFire,
+  onCameraPitch,
+  onResetCamera,
 }) => {
   const {
     state,
@@ -39,6 +41,7 @@ const Hud = ({
     aimValid = false,
     isMobile = false,
     lastHitAt = 0,
+    cameraPitch = 0,
   } = hud;
   const healthPct = maxHealth > 0 ? Math.max(0, (health / maxHealth) * 100) : 0;
   const healthClass = healthPct > 60 ? 'ok' : healthPct > 30 ? 'warn' : 'danger';
@@ -108,6 +111,19 @@ const Hud = ({
           <span className="hud-label">Estado</span>
           <span className="hud-value">{STATE_LABEL[state] || state}</span>
         </div>
+
+        <div className="hud-panel camera-panel">
+          <span className="hud-label">Câmera</span>
+          <span className="hud-value">{cameraPitch}°</span>
+          <button
+            type="button"
+            className="camera-reset"
+            onClick={onResetCamera}
+            aria-label="Resetar câmera"
+          >
+            Resetar
+          </button>
+        </div>
       </div>
 
       <Scoreboard
@@ -120,7 +136,8 @@ const Hud = ({
 
       {!isMobile && (
         <div className="hud-hint">
-          WASD / setas para mover · mouse para mirar · clique ou espaço para atirar · P/Esc pausa
+          WASD / setas para mover · mouse para mirar · clique ou espaço para atirar · Q/E ou roda
+          para inclinar a câmera · P/Esc pausa
         </div>
       )}
 
@@ -130,6 +147,7 @@ const Hud = ({
         onAim={onAim}
         onFire={onFire}
         onPause={onPause}
+        onCameraPitch={onCameraPitch}
         reloading={reloading}
         reloadProgress={reloadProgress}
       />
@@ -150,6 +168,9 @@ const Hud = ({
             </li>
             <li>
               <b>Atirar:</b> clique ou espaço
+            </li>
+            <li>
+              <b>Câmera:</b> Q/E, PageUp/PageDown ou roda do mouse
             </li>
             <li>
               <b>Pausar:</b> P ou Esc
