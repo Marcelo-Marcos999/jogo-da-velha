@@ -198,6 +198,20 @@ export class Game {
     else if (this.gameState.is(GAME_STATES.PAUSADO)) this.resume();
   }
 
+  // ---- Controles touch (delegados ao Input) --------------------------------
+
+  setMoveAxis(x, y) {
+    this.input.setMoveAxis(x, y);
+  }
+
+  setAimAxis(x, y, active = true) {
+    this.input.setAimAxis(x, y, active);
+  }
+
+  setFiring(firing) {
+    this.input.setFiring(firing);
+  }
+
   // ---- Mundo ---------------------------------------------------------------
 
   _resetWorld() {
@@ -315,7 +329,6 @@ export class Game {
       magazine: p ? p.profile.magazine : 0,
       reloading: p ? p.reloading : false,
       reloadProgress: p ? p.reloadProgress : 0,
-      enemies: this.enemySystem.aliveCount(),
       enemiesRemaining: this.waveSystem.enemiesRemaining,
       wave: this.waveSystem.currentWave,
       totalWaves: this.waveSystem.totalWaves,
