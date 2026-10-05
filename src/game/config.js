@@ -23,6 +23,18 @@ export const PROJECTILE = {
   radius: 0.35,
 };
 
+// Configuração da câmera (CameraRig). O pitch é o ângulo de elevação da câmera
+// em relação ao plano do chão, em graus: valores menores = visão mais
+// horizontal, valores maiores = visão mais de cima.
+export const CAMERA = {
+  pitchDefault: 25, // inclinação inicial (mais horizontal que o antigo ~45°)
+  pitchMin: 10, // limite inferior (mais horizontal)
+  pitchMax: 60, // limite superior (mais vertical)
+  pitchStep: 3, // incremento por input (teclado/roda/botões touch)
+  pitchSmoothing: 6, // suavização da interpolação até o valor alvo
+  storageKey: 'tank3d.camera.pitch.v1', // chave versionada no localStorage
+};
+
 // Perfis de tanque. Novas classes de tanque (etapas 2-5) = novos objetos aqui.
 export const TANK_PROFILES = {
   player: {
