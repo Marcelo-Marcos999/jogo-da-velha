@@ -12,7 +12,15 @@ const INITIAL_HUD = {
   magazine: 0,
   reloading: false,
   reloadProgress: 0,
-  enemies: 0,
+  enemiesRemaining: 0,
+  wave: 0,
+  totalWaves: 0,
+  countdown: 0,
+  score: 0,
+  highScore: 0,
+  accuracy: 0,
+  aimValid: false,
+  isMobile: false,
   lastHitAt: 0,
 };
 
@@ -47,10 +55,35 @@ function App() {
     gameRef.current?.startGame();
   }, []);
 
+  const handlePause = useCallback(() => {
+    gameRef.current?.togglePause();
+  }, []);
+
+  const handleMove = useCallback((x, y) => {
+    gameRef.current?.setMoveAxis(x, y);
+  }, []);
+
+  const handleAim = useCallback((x, y) => {
+    gameRef.current?.setAimAxis(x, y);
+  }, []);
+
+  const handleFire = useCallback((firing) => {
+    gameRef.current?.setFiring(firing);
+  }, []);
+
   return (
     <div className="app">
       <GameBoard ref={containerRef} />
-      <Hud hud={hud} onStart={handleStart} onResume={handleResume} onRestart={handleRestart} />
+      <Hud
+        hud={hud}
+        onStart={handleStart}
+        onResume={handleResume}
+        onRestart={handleRestart}
+        onPause={handlePause}
+        onMove={handleMove}
+        onAim={handleAim}
+        onFire={handleFire}
+      />
     </div>
   );
 }
