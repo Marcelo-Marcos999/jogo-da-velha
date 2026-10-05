@@ -44,4 +44,36 @@ export const TANK_PROFILES = {
   },
 };
 
+// Configuração dos inimigos (Etapa 2): perfil de tanque + parâmetros de IA.
+export const ENEMY = {
+  count: 4, // quantidade inicial de inimigos
+  spawnMinDistance: 18, // distância mínima do jogador no spawn
+  detectRange: 34, // alcance de detecção (com linha de visão)
+  attackRange: 22, // alcance de tiro
+  retreatHealthRatio: 0.35, // limiar de vida para recuar
+  retreatDistance: 26, // distância segura para sair do recuo
+  aimTolerance: 0.14, // erro angular tolerado para disparar (rad)
+  aimImprecision: 0.1, // imprecisão máxima da mira (rad)
+  reactionTime: 0.35, // tempo de reação no estado DETECT (s)
+  waypointTolerance: 2.5, // raio para considerar um waypoint alcançado
+  deathLinger: 2.5, // tempo que o destroço permanece na arena (s)
+  profile: {
+    id: 'enemy',
+    nome: 'Tanque Inimigo',
+    speed: 9,
+    acceleration: 30,
+    deceleration: 26,
+    turnSpeed: 1.9,
+    turretSpeed: 2.2,
+    maxHealth: 75,
+    damage: 15,
+    reload: 1.6, // cadência entre tiros (s)
+    magazine: 6,
+    magazineReload: 3.2,
+    radius: 1.5,
+    color: 0xb0413a,
+    turretColor: 0x7f2b26,
+  },
+};
+
 export const FIXED_STEP = 1 / 60;

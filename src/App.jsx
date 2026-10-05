@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Game } from './game/core/Game.js';
 import { GAME_STATES } from './game/config.js';
 import Hud from './components/Hud.jsx';
+import GameBoard from './components/GameBoard.jsx';
 
 const INITIAL_HUD = {
   state: GAME_STATES.MENU,
@@ -11,6 +12,8 @@ const INITIAL_HUD = {
   magazine: 0,
   reloading: false,
   reloadProgress: 0,
+  enemies: 0,
+  lastHitAt: 0,
 };
 
 function App() {
@@ -46,7 +49,7 @@ function App() {
 
   return (
     <div className="app">
-      <div className="game-container" ref={containerRef} />
+      <GameBoard ref={containerRef} />
       <Hud hud={hud} onStart={handleStart} onResume={handleResume} onRestart={handleRestart} />
     </div>
   );

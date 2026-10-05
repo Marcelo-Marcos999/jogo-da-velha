@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { GAME_STATES } from '../game/config.js';
 
 const STATE_LABEL = {
@@ -10,12 +10,33 @@ const STATE_LABEL = {
 };
 
 const Hud = ({ hud, onStart, onResume, onRestart }) => {
-  const { state, health, maxHealth, ammo, magazine, reloading, reloadProgress } = hud;
+  const {
+    state,
+    health,
+    maxHealth,
+    ammo,
+    magazine,
+    reloading,
+    reloadProgress,
+    enemies = 0,
+    lastHitAt = 0,
+  } = hud;
   const healthPct = maxHealth > 0 ? Math.max(0, (health / maxHealth) * 100) : 0;
   const healthClass = healthPct > 60 ? 'ok' : healthPct > 30 ? 'warn' : 'danger';
 
+  // Flash/vinheta ao receber dano: dispara quando lastHitAt muda.
+  const [hitFlash, setHitFlash] = useState(false);
+  useEffect(() => {
+    if (!lastHitAt) return undefined;
+    setHitFlash(true);
+    const id = setTimeout(() => setHitFlash(false), 350);
+    return () => clearTimeout(id);
+  }, [lastHitAt]);
+
   return (
     <div className="hud">
+      <div className={`damage-vignette${hitFlash ? ' active' : ''}`} />
+
       <div className="hud-top">
         <div className="hud-panel">
           <span className="hud-label">Vida</span>
@@ -40,6 +61,11 @@ const Hud = ({ hud, onStart, onResume, onRestart }) => {
               />
             </div>
           )}
+        </div>
+
+        <div className="hud-panel">
+          <span className="hud-label">Inimigos</span>
+          <span className="hud-value big">{enemies}</span>
         </div>
 
         <div className="hud-panel">

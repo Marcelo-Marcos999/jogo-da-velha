@@ -9,6 +9,7 @@ export class Tank {
     this.profile = profile;
 
     this.position = new THREE.Vector3(options.x || 0, 0, options.z || 0);
+    this.team = options.team || 'player'; // time: 'player' | 'enemy'
     this.yaw = options.yaw || 0; // orientação do casco (rad)
     this.turretYaw = 0; // rotação da torre relativa ao casco (rad)
     this.speed = 0; // velocidade escalar para frente/trás

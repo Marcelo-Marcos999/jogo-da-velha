@@ -35,6 +35,14 @@ export class Renderer {
 
     this._onResize = () => this.resize();
     window.addEventListener('resize', this._onResize);
+    window.addEventListener('orientationchange', this._onResize);
+
+    // Reage também a mudanças de tamanho do container (layout responsivo).
+    if (typeof ResizeObserver !== 'undefined') {
+      this._resizeObserver = new ResizeObserver(this._onResize);
+      this._resizeObserver.observe(container);
+    }
+
     this.resize();
   }
 
@@ -74,6 +82,11 @@ export class Renderer {
 
   dispose() {
     window.removeEventListener('resize', this._onResize);
+    window.removeEventListener('orientationchange', this._onResize);
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
     this.renderer.dispose();
     if (this.domElement.parentNode) {
       this.domElement.parentNode.removeChild(this.domElement);
