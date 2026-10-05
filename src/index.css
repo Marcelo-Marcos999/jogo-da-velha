@@ -133,10 +133,113 @@ body,
   overflow: hidden;
 }
 
+.reload-bar.active {
+  background: rgba(66, 165, 245, 0.25);
+}
+
 .reload-fill {
   height: 100%;
   background: #42a5f5;
   transition: width 0.1s linear;
+}
+
+.hud-sub {
+  font-size: 12px;
+  color: #9fb3c6;
+}
+
+/* ---- Mira central ---- */
+
+.reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.reticle-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  transform: translate(-50%, -50%);
+}
+
+.reticle-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 50%;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+.reticle.valid .reticle-ring {
+  border-color: #ff5252;
+  transform: scale(0.82);
+}
+
+.reticle.valid .reticle-dot {
+  background: #ff5252;
+}
+
+/* ---- Contagem regressiva entre ondas ---- */
+
+.wave-countdown {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 22px;
+  background: rgba(12, 18, 26, 0.7);
+  border: 1px solid rgba(120, 160, 200, 0.3);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.wave-countdown-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8fa6bd;
+}
+
+.wave-countdown-value {
+  font-size: 34px;
+  font-weight: 700;
+  color: #7fd18a;
+}
+
+/* ---- Scoreboard ---- */
+
+.scoreboard {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(12, 18, 26, 0.72);
+  border: 1px solid rgba(120, 160, 200, 0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+
+.scoreboard-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
 }
 
 .hud-hint {
@@ -212,6 +315,146 @@ body,
   transform: translateY(0);
 }
 
+.btn.ghost {
+  color: #cfe0ee;
+  background: rgba(120, 160, 200, 0.18);
+  border: 1px solid rgba(120, 160, 200, 0.4);
+}
+
+.btn.ghost:hover {
+  background: rgba(120, 160, 200, 0.3);
+}
+
+.overlay-controls {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #a9bccd;
+  font-size: 14px;
+}
+
+.overlay-controls b {
+  color: #dbe7f2;
+}
+
+.overlay-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.overlay-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+/* ---- Controles touch (mobile) ---- */
+
+.touch-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.joystick {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: rgba(12, 18, 26, 0.4);
+  border: 2px solid rgba(120, 160, 200, 0.35);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.joystick-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #8fa6bd;
+}
+
+.joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: rgba(127, 209, 138, 0.75);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.touch-right {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.touch-right .joystick {
+  position: relative;
+  bottom: auto;
+  left: auto;
+}
+
+.touch-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.touch-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(12, 18, 26, 0.55);
+  color: #e8eef5;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.touch-btn.fire {
+  background: rgba(229, 57, 53, 0.75);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.touch-btn.fire.reloading {
+  background: rgba(66, 165, 245, 0.6);
+}
+
+.touch-btn.pause {
+  width: 52px;
+  height: 52px;
+  align-self: flex-end;
+  font-size: 16px;
+}
+
+.fire-reload {
+  font-size: 15px;
+}
+
 /* ---- Responsividade ---- */
 
 /* Telas pequenas (celular): HUD compacto e empilhado. */
@@ -268,6 +511,53 @@ body,
   .overlay p {
     padding: 0 16px;
     font-size: 14px;
+  }
+
+  .scoreboard {
+    top: auto;
+    bottom: 8px;
+    right: 8px;
+    left: 8px;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+  }
+
+  .scoreboard-item {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .joystick {
+    width: 108px;
+    height: 108px;
+    bottom: 16px;
+    left: 16px;
+  }
+
+  .joystick-knob {
+    width: 46px;
+    height: 46px;
+    margin: -23px 0 0 -23px;
+  }
+
+  .touch-right {
+    bottom: 16px;
+    right: 16px;
+    gap: 10px;
+  }
+
+  .touch-btn {
+    width: 64px;
+    height: 64px;
+    font-size: 12px;
+  }
+
+  .touch-btn.pause {
+    width: 44px;
+    height: 44px;
   }
 }
 
