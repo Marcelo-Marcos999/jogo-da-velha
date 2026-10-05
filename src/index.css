@@ -455,6 +455,50 @@ body,
   font-size: 15px;
 }
 
+/* Coluna de ajuste da câmera (mobile): fica na borda direita, centralizada
+   verticalmente, longe dos joysticks e do botão de tiro. */
+.touch-camera {
+  position: absolute;
+  top: 50%;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.touch-btn.camera {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+  line-height: 1;
+  background: rgba(12, 18, 26, 0.55);
+}
+
+/* Indicador de ângulo da câmera no HUD. */
+.camera-panel {
+  align-items: flex-start;
+}
+
+.camera-reset {
+  margin-top: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #cfe0f0;
+  background: rgba(66, 165, 245, 0.25);
+  border: 1px solid rgba(120, 160, 200, 0.45);
+  border-radius: 12px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.camera-reset:hover {
+  background: rgba(66, 165, 245, 0.4);
+}
+
 /* ---- Responsividade ---- */
 
 /* Telas pequenas (celular): HUD compacto e empilhado. */
@@ -558,6 +602,17 @@ body,
   .touch-btn.pause {
     width: 44px;
     height: 44px;
+  }
+
+  .touch-camera {
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    gap: 8px;
+  }
+
+  .touch-btn.camera {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
   }
 }
 
