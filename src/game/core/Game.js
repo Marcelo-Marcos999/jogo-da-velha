@@ -12,6 +12,8 @@ import { AimSystem } from '../systems/AimSystem.js';
 import { WeaponSystem } from '../systems/WeaponSystem.js';
 import { ProjectileSystem } from '../systems/ProjectileSystem.js';
 import { HealthSystem } from '../systems/HealthSystem.js';
+import { DamageSystem } from '../systems/DamageSystem.js';
+import { EnemySystem } from '../systems/EnemySystem.js';
 import { CameraRig } from '../systems/CameraRig.js';
 import { GAME_STATES, TANK_PROFILES, FIXED_STEP } from '../config.js';
 
@@ -32,13 +34,20 @@ export class Game {
     this.movementSystem = new MovementSystem(this.arena);
     this.aimSystem = new AimSystem(this.renderer);
     this.healthSystem = new HealthSystem(this.eventBus);
+    this.damageSystem = new DamageSystem(this.healthSystem, this.eventBus);
     this.projectileSystem = new ProjectileSystem(
       this.renderer.scene,
       this.arena,
-      this.healthSystem,
+      this.damageSystem,
       this.eventBus,
     );
     this.weaponSystem = new WeaponSystem(this.projectileSystem, this.eventBus);
+    this.enemySystem = new EnemySystem(
+      this.renderer.scene,
+      this.arena,
+      this.weaponSystem,
+      this.eventBus,
+    );
 
     this.state = GAME_STATES.MENU;
     this.tanks = [];
@@ -47,6 +56,7 @@ export class Game {
     this._raf = null;
     this._running = false;
     this._hudAccumulator = 0;
+    this._lastHitAt = 0;
 
     this._onStateChange = options.onStateChange || (() => {});
     this._onHud = options.onHud || (() => {});
@@ -56,6 +66,13 @@ export class Game {
       this.eventBus.on('tanqueMorto', ({ tank }) => {
         if (tank === this.player) {
           this.setState(GAME_STATES.DERROTA);
+        }
+      }),
+    );
+    this._unsubs.push(
+      this.eventBus.on('danoRecebido', ({ tank }) => {
+        if (tank === this.player) {
+          this._lastHitAt = performance.now();
         }
       }),
     );
@@ -88,6 +105,7 @@ export class Game {
     for (const unsub of this._unsubs) unsub();
     this._unsubs.length = 0;
     this.projectileSystem.clear();
+    this.enemySystem.clear();
     if (this.player) this.player.dispose();
     this.arena.dispose();
     this.input.dispose();
@@ -138,7 +156,9 @@ export class Game {
 
     this.player = new Tank(TANK_PROFILES.player, { x: 0, z: -22, yaw: 0 });
     this.renderer.scene.add(this.player.group);
-    this.tanks = [this.player];
+
+    this.enemySystem.spawnInitial(this.player);
+    this.tanks = [this.player, ...this.enemySystem.getTanks()];
 
     this.cameraRig.snap(this.player);
     this._emitHud();
@@ -162,13 +182,20 @@ export class Game {
   _fixedUpdate(dt) {
     if (this.state === GAME_STATES.JOGANDO) {
       const player = this.player;
+      // 1) Input do jogador (movimento, mira, tiro).
       if (player && player.alive) {
         this.movementSystem.update(player, this.input, dt);
         this.aimSystem.update(player, this.input, dt);
         this.weaponSystem.update(player, this.input, dt);
       }
-      this.projectileSystem.update(dt, this.tanks);
-      this.healthSystem.update(dt, this.tanks);
+      // 2) IA + movimento/colisão dos inimigos.
+      this.enemySystem.update(dt, player);
+      // 3) Projéteis e dano (lista de tanques atualizada a cada passo).
+      const tanks = [player, ...this.enemySystem.getTanks()];
+      this.tanks = tanks;
+      this.projectileSystem.update(dt, tanks);
+      this.damageSystem.update(dt, tanks);
+      // 4) Câmera.
       this.cameraRig.update(player, dt);
     }
   }
@@ -209,6 +236,8 @@ export class Game {
       magazine: p ? p.profile.magazine : 0,
       reloading: p ? p.reloading : false,
       reloadProgress: p ? p.reloadProgress : 0,
+      enemies: this.enemySystem.aliveCount(),
+      lastHitAt: this._lastHitAt,
     });
   }
 }
