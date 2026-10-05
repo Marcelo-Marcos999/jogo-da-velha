@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { GAME_STATES } from '../game/config.js';
 import Scoreboard from './Scoreboard.jsx';
+import TouchControls from './TouchControls.jsx';
 
 const STATE_LABEL = {
   [GAME_STATES.MENU]: 'Menu',
@@ -10,7 +11,16 @@ const STATE_LABEL = {
   [GAME_STATES.DERROTA]: 'Destruído',
 };
 
-const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
+const Hud = ({
+  hud,
+  onStart,
+  onResume,
+  onRestart,
+  onPause,
+  onMove,
+  onAim,
+  onFire,
+}) => {
   const {
     state,
     health,
@@ -34,6 +44,7 @@ const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
   const healthClass = healthPct > 60 ? 'ok' : healthPct > 30 ? 'warn' : 'danger';
   const reloadPct = Math.round(Math.max(0, Math.min(1, reloadProgress)) * 100);
   const playing = state === GAME_STATES.JOGANDO;
+  const accuracyPct = Math.round(Math.max(0, Math.min(1, accuracy)) * 100);
 
   // Flash/vinheta ao receber dano: dispara quando lastHitAt muda.
   const [hitFlash, setHitFlash] = useState(false);
@@ -47,6 +58,22 @@ const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
   return (
     <div className="hud">
       <div className={`damage-vignette${hitFlash ? ' active' : ''}`} />
+
+      {/* Mira central + indicador de alvo válido. */}
+      {playing && (
+        <div className={`reticle${aimValid ? ' valid' : ''}`} aria-hidden="true">
+          <span className="reticle-dot" />
+          <span className="reticle-ring" />
+        </div>
+      )}
+
+      {/* Contagem regressiva entre ondas. */}
+      {playing && countdown > 0 && (
+        <div className="wave-countdown">
+          <span className="wave-countdown-label">Próxima onda em</span>
+          <span className="wave-countdown-value">{countdown}</span>
+        </div>
+      )}
 
       <div className="hud-top">
         <div className="hud-panel">
@@ -64,19 +91,17 @@ const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
           <span className="hud-value big">
             {reloading ? 'RECARREGANDO' : `${ammo}/${magazine}`}
           </span>
-          {reloading && (
-            <div className="reload-bar">
-              <div
-                className="reload-fill"
-                style={{ width: `${Math.min(100, Math.max(0, reloadProgress * 100))}%` }}
-              />
-            </div>
-          )}
+          <div className={`reload-bar${reloading ? ' active' : ''}`}>
+            <div className="reload-fill" style={{ width: `${reloading ? reloadPct : 0}%` }} />
+          </div>
         </div>
 
         <div className="hud-panel">
-          <span className="hud-label">Inimigos</span>
-          <span className="hud-value big">{enemies}</span>
+          <span className="hud-label">Onda</span>
+          <span className="hud-value big">
+            {wave}/{totalWaves}
+          </span>
+          <span className="hud-sub">Inimigos: {enemiesRemaining}</span>
         </div>
 
         <div className="hud-panel">
@@ -85,16 +110,53 @@ const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
         </div>
       </div>
 
-      <div className="hud-hint">
-        WASD / setas para mover · mouse para mirar · clique ou espaço para atirar · P/Esc pausa
-      </div>
+      <Scoreboard
+        score={score}
+        highScore={highScore}
+        wave={wave}
+        totalWaves={totalWaves}
+        accuracy={accuracy}
+      />
+
+      {!isMobile && (
+        <div className="hud-hint">
+          WASD / setas para mover · mouse para mirar · clique ou espaço para atirar · P/Esc pausa
+        </div>
+      )}
+
+      <TouchControls
+        visible={isMobile && playing}
+        onMove={onMove}
+        onAim={onAim}
+        onFire={onFire}
+        onPause={onPause}
+        reloading={reloading}
+        reloadProgress={reloadProgress}
+      />
 
       {state === GAME_STATES.MENU && (
         <div className="overlay">
           <h1>TANQUE DE GUERRA</h1>
-          <p>Protótipo do núcleo: arena, movimentação, mira, tiro e destruição.</p>
+          <p>
+            Sobreviva a {totalWaves || 5} ondas de tanques inimigos. Destrua todos antes que
+            acabem com você.
+          </p>
+          <ul className="overlay-controls">
+            <li>
+              <b>Mover:</b> WASD / setas
+            </li>
+            <li>
+              <b>Mirar:</b> mouse
+            </li>
+            <li>
+              <b>Atirar:</b> clique ou espaço
+            </li>
+            <li>
+              <b>Pausar:</b> P ou Esc
+            </li>
+          </ul>
           <button className="btn" onClick={onStart}>
-            Iniciar (Enter)
+            Jogar (Enter)
           </button>
         </div>
       )}
@@ -103,7 +165,10 @@ const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
         <div className="overlay">
           <h2>Pausado</h2>
           <button className="btn" onClick={onResume}>
-            Continuar (P)
+            Continuar (Esc)
+          </button>
+          <button className="btn ghost" onClick={onRestart}>
+            Reiniciar
           </button>
         </div>
       )}
@@ -111,17 +176,46 @@ const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
       {state === GAME_STATES.DERROTA && (
         <div className="overlay danger">
           <h2>Tanque destruído</h2>
+          <div className="overlay-stats">
+            <div className="overlay-stat">
+              <span className="hud-label">Pontuação</span>
+              <span className="hud-value big">{score}</span>
+            </div>
+            <div className="overlay-stat">
+              <span className="hud-label">Recorde</span>
+              <span className="hud-value">{highScore}</span>
+            </div>
+            <div className="overlay-stat">
+              <span className="hud-label">Precisão</span>
+              <span className="hud-value">{accuracyPct}%</span>
+            </div>
+          </div>
           <button className="btn" onClick={onRestart}>
-            Reiniciar (R)
+            Jogar de novo (R)
           </button>
         </div>
       )}
 
       {state === GAME_STATES.VITORIA && (
         <div className="overlay">
-          <h2>Vitória</h2>
+          <h2>Vitória!</h2>
+          <p>Você sobreviveu a todas as ondas.</p>
+          <div className="overlay-stats">
+            <div className="overlay-stat">
+              <span className="hud-label">Pontuação</span>
+              <span className="hud-value big">{score}</span>
+            </div>
+            <div className="overlay-stat">
+              <span className="hud-label">Recorde</span>
+              <span className="hud-value">{highScore}</span>
+            </div>
+            <div className="overlay-stat">
+              <span className="hud-label">Precisão</span>
+              <span className="hud-value">{accuracyPct}%</span>
+            </div>
+          </div>
           <button className="btn" onClick={onRestart}>
-            Reiniciar (R)
+            Jogar de novo (R)
           </button>
         </div>
       )}
