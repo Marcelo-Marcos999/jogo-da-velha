@@ -18,6 +18,43 @@ export const OBSTACLE_DESCRIPTORS = [
   { x: 0, z: 0, w: 5, d: 5, h: 4, tipo: 'torre', destrutivel: false },
 ];
 
+// Pontos de patrulha (dados puros). Ficam em áreas abertas, longe dos obstáculos.
+export const PATROL_WAYPOINTS = [
+  { x: -24, z: -24 },
+  { x: 0, z: -24 },
+  { x: 24, z: -24 },
+  { x: 24, z: 0 },
+  { x: 24, z: 24 },
+  { x: 0, z: 24 },
+  { x: -24, z: 24 },
+  { x: -24, z: 0 },
+];
+
+// Teste segmento (2D, plano XZ) contra uma AABB (método Liang-Barsky).
+function segmentIntersectsAABB(x0, z0, x1, z1, box) {
+  const dx = x1 - x0;
+  const dz = z1 - z0;
+  const p = [-dx, dx, -dz, dz];
+  const q = [x0 - box.minX, box.maxX - x0, z0 - box.minZ, box.maxZ - z0];
+  let t0 = 0;
+  let t1 = 1;
+  for (let i = 0; i < 4; i++) {
+    if (p[i] === 0) {
+      if (q[i] < 0) return false;
+    } else {
+      const r = q[i] / p[i];
+      if (p[i] < 0) {
+        if (r > t1) return false;
+        if (r > t0) t0 = r;
+      } else {
+        if (r < t0) return false;
+        if (r < t1) t1 = r;
+      }
+    }
+  }
+  return true;
+}
+
 const COLORS = {
   piso: 0x3c4a3a,
   grade: 0x556b52,
@@ -112,6 +149,36 @@ export class Arena {
     };
     this.colliders.push(collider);
     return collider;
+  }
+
+  // Waypoints de patrulha (cópia defensiva).
+  getWaypoints() {
+    return PATROL_WAYPOINTS.map((w) => ({ x: w.x, z: w.z }));
+  }
+
+  // Pontos de spawn válidos: dentro dos limites e fora de qualquer obstáculo.
+  getSpawnPoints() {
+    if (this._spawnPoints) return this._spawnPoints;
+    const points = [];
+    const margin = 4;
+    const limit = this.halfSize - margin;
+    const step = 6;
+    for (let x = -limit; x <= limit; x += step) {
+      for (let z = -limit; z <= limit; z += step) {
+        if (this.hitsCollider({ x, y: 0, z }, 2.5)) continue;
+        points.push({ x, z });
+      }
+    }
+    this._spawnPoints = points;
+    return points;
+  }
+
+  // Linha de visão entre dois pontos (bloqueada por paredes/obstáculos).
+  hasLineOfSight(from, to) {
+    for (const c of this.colliders) {
+      if (segmentIntersectsAABB(from.x, from.z, to.x, to.z, c)) return false;
+    }
+    return true;
   }
 
   // Retorna o primeiro colisor atingido por um ponto (com raio opcional).
