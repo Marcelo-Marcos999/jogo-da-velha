@@ -29,13 +29,16 @@ export class Game {
 
     this.eventBus = new EventBus();
     this.renderer = new Renderer(container);
-    this.input = new Input(this.renderer.domElement);
+
+    // O CameraRig é criado antes do Input (que o usa para ajustar o pitch) e
+    // antes dos demais sistemas que dependem da câmera.
+    this.cameraRig = new CameraRig(this.renderer.camera);
+    this.input = new Input(this.renderer.domElement, this.cameraRig);
     this.time = new Time(FIXED_STEP);
 
     this.arena = new Arena();
     this.renderer.scene.add(this.arena.group);
 
-    this.cameraRig = new CameraRig(this.renderer.camera);
     this.movementSystem = new MovementSystem(this.arena);
     this.aimSystem = new AimSystem(this.renderer);
     this.healthSystem = new HealthSystem(this.eventBus);
@@ -212,6 +215,20 @@ export class Game {
     this.input.setFiring(firing);
   }
 
+  // ---- Câmera (ajuste manual do jogador) -----------------------------------
+
+  // Ajusta a inclinação da câmera em `delta` graus (clamp + persistência).
+  adjustCameraPitch(delta) {
+    this.cameraRig.adjustPitch(delta);
+    this._emitHud();
+  }
+
+  // Volta a inclinação ao padrão e limpa a persistência.
+  resetCamera() {
+    this.cameraRig.resetPitch();
+    this._emitHud();
+  }
+
   // ---- Mundo ---------------------------------------------------------------
 
   _resetWorld() {
@@ -340,6 +357,7 @@ export class Game {
       aimValid: this._aimValid(),
       isMobile: this.isMobile,
       lastHitAt: this._lastHitAt,
+      cameraPitch: Math.round(this.cameraRig.getPitch()),
     });
   }
 }
