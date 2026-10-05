@@ -14,6 +14,10 @@ const PREVENT_DEFAULT = new Set([
   'Space',
 ]);
 
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
 export class Input {
   constructor(target) {
     this.target = target;
@@ -23,6 +27,13 @@ export class Input {
     this.mouseDown = false;
     this.pointerLocked = false;
     this.enabled = true;
+    // Estado sintético dos controles touch (joysticks/botões). Preenchido pelo
+    // componente TouchControls; não duplica a lógica de movimento/mira.
+    this.touch = {
+      move: { x: 0, y: 0 }, // x: direita(+), y: frente(+)
+      aim: { x: 0, y: 0, active: false }, // direção de mira (frente = +y)
+      firing: false,
+    };
     this._handlers = {};
     this._bind();
   }
@@ -94,7 +105,8 @@ export class Input {
     let value = 0;
     if (this.isAnyDown(FORWARD_KEYS)) value += 1;
     if (this.isAnyDown(BACK_KEYS)) value -= 1;
-    return value;
+    if (value === 0) value = this.touch.move.y;
+    return clamp(value, -1, 1);
   }
 
   // -1 (esquerda) .. 1 (direita)
@@ -102,11 +114,38 @@ export class Input {
     let value = 0;
     if (this.isAnyDown(RIGHT_KEYS)) value += 1;
     if (this.isAnyDown(LEFT_KEYS)) value -= 1;
-    return value;
+    if (value === 0) value = this.touch.move.x;
+    return clamp(value, -1, 1);
   }
 
   isFiring() {
-    return this.mouseDown || this.isAnyDown(FIRE_KEYS);
+    return this.mouseDown || this.isAnyDown(FIRE_KEYS) || this.touch.firing;
+  }
+
+  // ---- Controles touch (chamados pelo TouchControls) -----------------------
+
+  setMoveAxis(x, y) {
+    this.touch.move.x = clamp(x, -1, 1);
+    this.touch.move.y = clamp(y, -1, 1);
+  }
+
+  setAimAxis(x, y, active = true) {
+    this.touch.aim.x = clamp(x, -1, 1);
+    this.touch.aim.y = clamp(y, -1, 1);
+    this.touch.aim.active = active;
+  }
+
+  setFiring(firing) {
+    this.touch.firing = !!firing;
+  }
+
+  clearTouch() {
+    this.touch.move.x = 0;
+    this.touch.move.y = 0;
+    this.touch.aim.x = 0;
+    this.touch.aim.y = 0;
+    this.touch.aim.active = false;
+    this.touch.firing = false;
   }
 
   // Consome uma tecla pressionada (edge), retornando true apenas uma vez.
