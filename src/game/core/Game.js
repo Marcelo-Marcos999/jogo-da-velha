@@ -15,6 +15,11 @@ import { HealthSystem } from '../systems/HealthSystem.js';
 import { DamageSystem } from '../systems/DamageSystem.js';
 import { EnemySystem } from '../systems/EnemySystem.js';
 import { CameraRig } from '../systems/CameraRig.js';
+import { WaveSystem } from '../systems/WaveSystem.js';
+import { ScoreSystem } from '../systems/ScoreSystem.js';
+import { EffectsSystem } from '../systems/EffectsSystem.js';
+import { GameState } from './GameState.js';
+import { DeviceDetector } from './DeviceDetector.js';
 import { GAME_STATES, TANK_PROFILES, FIXED_STEP } from '../config.js';
 
 export class Game {
@@ -49,9 +54,21 @@ export class Game {
       this.eventBus,
     );
 
-    this.state = GAME_STATES.MENU;
+    // Etapa 3: ondas, pontuação, efeitos, estados e detecção de dispositivo.
+    this.waveSystem = new WaveSystem({
+      enemySystem: this.enemySystem,
+      arena: this.arena,
+      eventBus: this.eventBus,
+    });
+    this.scoreSystem = new ScoreSystem(this.eventBus);
+    this.effectsSystem = new EffectsSystem(this.renderer.scene, this.eventBus);
+    this.gameState = new GameState(GAME_STATES.MENU);
+    this.deviceDetector = new DeviceDetector(this.eventBus);
+
     this.tanks = [];
     this.player = null;
+    this.isMobile = this.deviceDetector.isMobile;
+    this._score = { score: 0, highScore: this.scoreSystem.highScore, accuracy: 0, kills: 0 };
 
     this._raf = null;
     this._running = false;
@@ -63,9 +80,16 @@ export class Game {
 
     this._unsubs = [];
     this._unsubs.push(
+      this.gameState.onChange((next) => {
+        this._onStateChange(next);
+        this._emitHud();
+      }),
+    );
+    this._unsubs.push(
       this.eventBus.on('tanqueMorto', ({ tank }) => {
         if (tank === this.player) {
-          this.setState(GAME_STATES.DERROTA);
+          this.scoreSystem.finalize();
+          this.gameState.set(GAME_STATES.DERROTA);
         }
       }),
     );
@@ -76,11 +100,36 @@ export class Game {
         }
       }),
     );
+    this._unsubs.push(
+      this.eventBus.on('waves:completed', () => {
+        if (this.gameState.is(GAME_STATES.JOGANDO)) {
+          this.scoreSystem.finalize();
+          this.gameState.set(GAME_STATES.VITORIA);
+        }
+      }),
+    );
+    this._unsubs.push(
+      this.eventBus.on('score:changed', (payload) => {
+        this._score = payload;
+        this._emitHud();
+      }),
+    );
+    this._unsubs.push(
+      this.eventBus.on('device:changed', ({ isMobile }) => {
+        this.isMobile = isMobile;
+        this._emitHud();
+      }),
+    );
 
     this._loop = this._loop.bind(this);
 
     // Cria o mundo inicial (visível no MENU).
     this._resetWorld();
+  }
+
+  // Estado atual (string) — mantém a API anterior baseada em GAME_STATES.
+  get state() {
+    return this.gameState.get();
   }
 
   // ---- Ciclo de vida -------------------------------------------------------
@@ -106,6 +155,11 @@ export class Game {
     this._unsubs.length = 0;
     this.projectileSystem.clear();
     this.enemySystem.clear();
+    this.effectsSystem.dispose();
+    this.waveSystem.dispose();
+    this.scoreSystem.dispose();
+    this.deviceDetector.dispose();
+    this.gameState.clear();
     if (this.player) this.player.dispose();
     this.arena.dispose();
     this.input.dispose();
@@ -116,38 +170,43 @@ export class Game {
   // ---- Máquina de estados --------------------------------------------------
 
   setState(next) {
-    if (this.state === next) return;
-    this.state = next;
-    this._onStateChange(next);
-    this._emitHud();
+    this.gameState.set(next);
   }
 
   startGame() {
     this._resetWorld();
-    this.setState(GAME_STATES.JOGANDO);
+    this.scoreSystem.start();
+    this.gameState.set(GAME_STATES.JOGANDO);
+    this.waveSystem.start(this.player);
+    this._emitHud();
   }
 
   pause() {
-    if (this.state === GAME_STATES.JOGANDO) {
-      this.setState(GAME_STATES.PAUSADO);
+    if (this.gameState.is(GAME_STATES.JOGANDO)) {
+      this.gameState.set(GAME_STATES.PAUSADO);
     }
   }
 
   resume() {
-    if (this.state === GAME_STATES.PAUSADO) {
-      this.setState(GAME_STATES.JOGANDO);
+    if (this.gameState.is(GAME_STATES.PAUSADO)) {
+      this.gameState.set(GAME_STATES.JOGANDO);
     }
   }
 
   togglePause() {
-    if (this.state === GAME_STATES.JOGANDO) this.pause();
-    else if (this.state === GAME_STATES.PAUSADO) this.resume();
+    if (this.gameState.is(GAME_STATES.JOGANDO)) this.pause();
+    else if (this.gameState.is(GAME_STATES.PAUSADO)) this.resume();
   }
 
   // ---- Mundo ---------------------------------------------------------------
 
   _resetWorld() {
     this.projectileSystem.clear();
+    this.enemySystem.clear();
+    this.effectsSystem.clear();
+    this.waveSystem.reset();
+    this.scoreSystem.reset();
+    this.input.clearTouch();
 
     if (this.player) {
       this.renderer.scene.remove(this.player.group);
@@ -157,8 +216,8 @@ export class Game {
     this.player = new Tank(TANK_PROFILES.player, { x: 0, z: -22, yaw: 0 });
     this.renderer.scene.add(this.player.group);
 
-    this.enemySystem.spawnInitial(this.player);
-    this.tanks = [this.player, ...this.enemySystem.getTanks()];
+    this.tanks = [this.player];
+    this._lastHitAt = 0;
 
     this.cameraRig.snap(this.player);
     this._emitHud();
@@ -180,7 +239,7 @@ export class Game {
   }
 
   _fixedUpdate(dt) {
-    if (this.state === GAME_STATES.JOGANDO) {
+    if (this.gameState.is(GAME_STATES.JOGANDO)) {
       const player = this.player;
       // 1) Input do jogador (movimento, mira, tiro).
       if (player && player.alive) {
@@ -195,9 +254,14 @@ export class Game {
       this.tanks = tanks;
       this.projectileSystem.update(dt, tanks);
       this.damageSystem.update(dt, tanks);
-      // 4) Câmera.
+      // 4) Ondas (spawn/limpeza/contagem).
+      this.waveSystem.update(dt);
+      // 5) Câmera.
       this.cameraRig.update(player, dt);
     }
+
+    // Efeitos continuam animando mesmo em pausa/vitória/derrota.
+    this.effectsSystem.update(dt);
   }
 
   _handleGlobalInput() {
@@ -205,12 +269,12 @@ export class Game {
       this.togglePause();
     }
 
-    if (this.state === GAME_STATES.MENU && this.input.consumeKey('Enter')) {
+    if (this.gameState.is(GAME_STATES.MENU) && this.input.consumeKey('Enter')) {
       this.startGame();
     }
 
     if (
-      (this.state === GAME_STATES.DERROTA || this.state === GAME_STATES.VITORIA) &&
+      (this.gameState.is(GAME_STATES.DERROTA) || this.gameState.is(GAME_STATES.VITORIA)) &&
       (this.input.consumeKey('KeyR') || this.input.consumeKey('Enter'))
     ) {
       this.startGame();
@@ -226,6 +290,21 @@ export class Game {
     this._emitHud();
   }
 
+  // Indica se a mira atual aponta para um inimigo vivo (reticência de alvo).
+  _aimValid() {
+    const p = this.player;
+    if (!p || !this.aimSystem.hasTarget) return false;
+    const point = this.aimSystem.point;
+    for (const enemy of this.enemySystem.getTanks()) {
+      if (!enemy.alive) continue;
+      const dx = enemy.position.x - point.x;
+      const dz = enemy.position.z - point.z;
+      const r = enemy.radius + 1.5;
+      if (dx * dx + dz * dz <= r * r) return true;
+    }
+    return false;
+  }
+
   _emitHud() {
     const p = this.player;
     this._onHud({
@@ -237,6 +316,16 @@ export class Game {
       reloading: p ? p.reloading : false,
       reloadProgress: p ? p.reloadProgress : 0,
       enemies: this.enemySystem.aliveCount(),
+      enemiesRemaining: this.waveSystem.enemiesRemaining,
+      wave: this.waveSystem.currentWave,
+      totalWaves: this.waveSystem.totalWaves,
+      countdown: this.waveSystem.countdownSeconds,
+      score: this._score.score,
+      highScore: this._score.highScore,
+      accuracy: this._score.accuracy,
+      kills: this._score.kills,
+      aimValid: this._aimValid(),
+      isMobile: this.isMobile,
       lastHitAt: this._lastHitAt,
     });
   }
