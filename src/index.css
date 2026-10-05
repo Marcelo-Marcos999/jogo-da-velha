@@ -46,9 +46,29 @@ body,
   position: absolute;
   top: 16px;
   left: 16px;
+  right: 16px;
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* Vinheta vermelha ao receber dano. */
+.damage-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(220, 40, 40, 0) 45%,
+    rgba(220, 40, 40, 0.55) 100%
+  );
+}
+
+.damage-vignette.active {
+  opacity: 1;
+  transition: opacity 0.05s ease-in;
 }
 
 .hud-panel {
@@ -190,4 +210,92 @@ body,
 
 .btn:active {
   transform: translateY(0);
+}
+
+/* ---- Responsividade ---- */
+
+/* Telas pequenas (celular): HUD compacto e empilhado. */
+@media (max-width: 640px) {
+  .hud-top {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 6px;
+  }
+
+  .hud-panel {
+    min-width: 0;
+    flex: 1 1 calc(50% - 6px);
+    padding: 6px 10px;
+    gap: 4px;
+  }
+
+  .hud-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+  }
+
+  .hud-value {
+    font-size: 13px;
+  }
+
+  .hud-value.big {
+    font-size: 16px;
+  }
+
+  .health-bar {
+    height: 8px;
+  }
+
+  .hud-hint {
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+    padding: 6px 12px;
+    font-size: 11px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .overlay h1 {
+    font-size: 30px;
+    letter-spacing: 3px;
+  }
+
+  .overlay h2 {
+    font-size: 24px;
+  }
+
+  .overlay p {
+    padding: 0 16px;
+    font-size: 14px;
+  }
+}
+
+/* Celular em paisagem: HUD em linha única e compacto. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .hud-top {
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .hud-panel {
+    min-width: 0;
+    flex: 1 1 0;
+    padding: 4px 8px;
+  }
+
+  .hud-hint {
+    display: none;
+  }
+
+  .overlay h1 {
+    font-size: 26px;
+  }
+
+  .overlay h2 {
+    font-size: 20px;
+  }
 }
