@@ -11,7 +11,9 @@ export class WeaponSystem {
     this.eventBus = eventBus;
   }
 
-  update(tank, input, dt) {
+  // Avança apenas os temporizadores (recarga do pente e cadência).
+  // Reutilizado pela IA dos inimigos, que decide quando disparar.
+  tick(tank, dt) {
     if (!tank || !tank.alive) return;
 
     // Recarga do pente em andamento.
@@ -32,6 +34,13 @@ export class WeaponSystem {
     if (tank.reloadTimer > 0) {
       tank.reloadTimer -= dt;
     }
+  }
+
+  update(tank, input, dt) {
+    if (!tank || !tank.alive) return;
+
+    this.tick(tank, dt);
+    if (tank.reloading) return;
 
     if (input.isFiring() && tank.reloadTimer <= 0) {
       this.fire(tank);
