@@ -78,10 +78,13 @@ const Hud = ({
         </div>
       )}
 
-      <div className="hud-top">
-        <div className="hud-panel">
-          <span className="hud-label">Vida</span>
-          <div className="health-bar">
+      {/* Barra fina única com as estatísticas essenciais. */}
+      <div className="hud-bar">
+        <div className="hud-chip health" title={`Vida: ${health}/${maxHealth}`}>
+          <span className="hud-icon" aria-hidden="true">
+            ❤
+          </span>
+          <div className="health-bar" aria-hidden="true">
             <div className={`health-fill ${healthClass}`} style={{ width: `${healthPct}%` }} />
           </div>
           <span className="hud-value">
@@ -89,31 +92,44 @@ const Hud = ({
           </span>
         </div>
 
-        <div className="hud-panel">
-          <span className="hud-label">Munição</span>
-          <span className="hud-value big">
-            {reloading ? 'RECARREGANDO' : `${ammo}/${magazine}`}
+        <div
+          className={`hud-chip ammo${reloading ? ' reloading' : ''}`}
+          title={reloading ? `Recarregando ${reloadPct}%` : `Munição: ${ammo}/${magazine}`}
+        >
+          <span className="hud-icon" aria-hidden="true">
+            {reloading ? '⟳' : '▮'}
           </span>
-          <div className={`reload-bar${reloading ? ' active' : ''}`}>
+          <span className="hud-value">{reloading ? `${reloadPct}%` : `${ammo}/${magazine}`}</span>
+          <div className={`reload-bar${reloading ? ' active' : ''}`} aria-hidden="true">
             <div className="reload-fill" style={{ width: `${reloading ? reloadPct : 0}%` }} />
           </div>
         </div>
 
-        <div className="hud-panel">
-          <span className="hud-label">Onda</span>
-          <span className="hud-value big">
-            {wave}/{totalWaves}
+        <div className="hud-chip enemies" title={`Inimigos restantes: ${enemiesRemaining}`}>
+          <span className="hud-icon" aria-hidden="true">
+            ◎
           </span>
-          <span className="hud-sub">Inimigos: {enemiesRemaining}</span>
+          <span className="hud-value">{enemiesRemaining}</span>
         </div>
 
-        <div className="hud-panel">
-          <span className="hud-label">Estado</span>
+        <div className="hud-chip score" title={`Pontuação: ${score}`}>
+          <span className="hud-icon" aria-hidden="true">
+            ★
+          </span>
+          <span className="hud-value big">{score}</span>
+        </div>
+
+        <div className="hud-chip state" title={`Estado: ${STATE_LABEL[state] || state}`}>
+          <span className="hud-icon" aria-hidden="true">
+            ⚑
+          </span>
           <span className="hud-value">{STATE_LABEL[state] || state}</span>
         </div>
 
-        <div className="hud-panel camera-panel">
-          <span className="hud-label">Câmera</span>
+        <div className="hud-chip camera">
+          <span className="hud-icon" aria-hidden="true">
+            ⌖
+          </span>
           <span className="hud-value">{cameraPitch}°</span>
           <button
             type="button"
@@ -121,7 +137,7 @@ const Hud = ({
             onClick={onResetCamera}
             aria-label="Resetar câmera"
           >
-            Resetar
+            ↺
           </button>
         </div>
       </div>
