@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { CAMERA } from '../game/config.js';
 
 // Joystick virtual reutilizável (base + knob). Reporta um vetor normalizado
 // (-1..1) com y positivo para cima. Usa Pointer Events para funcionar em
@@ -71,6 +72,7 @@ const TouchControls = ({
   onAim,
   onFire,
   onPause,
+  onCameraPitch,
   reloading = false,
   reloadProgress = 0,
 }) => {
@@ -84,6 +86,32 @@ const TouchControls = ({
   return (
     <div className="touch-controls">
       <Joystick label="Mover" onChange={handleMove} />
+
+      {/* Ajuste da inclinação da câmera (coluna vertical, à direita). */}
+      <div className="touch-camera">
+        <button
+          type="button"
+          className="touch-btn camera"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onCameraPitch(CAMERA.pitchStep);
+          }}
+          aria-label="Inclinar câmera para cima"
+        >
+          ▲
+        </button>
+        <button
+          type="button"
+          className="touch-btn camera"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            onCameraPitch(-CAMERA.pitchStep);
+          }}
+          aria-label="Inclinar câmera para baixo"
+        >
+          ▼
+        </button>
+      </div>
 
       <div className="touch-right">
         <Joystick label="Mirar" onChange={handleAim} />
