@@ -22,6 +22,7 @@ const INITIAL_HUD = {
   aimValid: false,
   isMobile: false,
   lastHitAt: 0,
+  cameraPitch: 0,
 };
 
 function App() {
@@ -71,6 +72,14 @@ function App() {
     gameRef.current?.setFiring(firing);
   }, []);
 
+  const handleCameraPitch = useCallback((delta) => {
+    gameRef.current?.adjustCameraPitch(delta);
+  }, []);
+
+  const handleResetCamera = useCallback(() => {
+    gameRef.current?.resetCamera();
+  }, []);
+
   return (
     <div className="app">
       <GameBoard ref={containerRef} />
@@ -83,6 +92,8 @@ function App() {
         onMove={handleMove}
         onAim={handleAim}
         onFire={handleFire}
+        onCameraPitch={handleCameraPitch}
+        onResetCamera={handleResetCamera}
       />
     </div>
   );
