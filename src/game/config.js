@@ -76,4 +76,27 @@ export const ENEMY = {
   },
 };
 
+// Configuração das ondas (Etapa 3). Cada onda define quantidade de inimigos,
+// intervalo de spawn e multiplicadores de dificuldade (vida, velocidade e
+// cadência de tiro). Ondas além das listadas escalam automaticamente.
+export const WAVES = {
+  total: 5, // sobreviver a N ondas = vitória
+  countdown: 3, // intervalo entre ondas (s)
+  waves: [
+    { enemies: 3, spawnInterval: 1.4, healthMul: 1.0, speedMul: 1.0, fireRateMul: 1.0 },
+    { enemies: 4, spawnInterval: 1.2, healthMul: 1.15, speedMul: 1.05, fireRateMul: 1.1 },
+    { enemies: 5, spawnInterval: 1.0, healthMul: 1.3, speedMul: 1.1, fireRateMul: 1.2 },
+    { enemies: 6, spawnInterval: 0.9, healthMul: 1.5, speedMul: 1.15, fireRateMul: 1.3 },
+    { enemies: 7, spawnInterval: 0.8, healthMul: 1.75, speedMul: 1.2, fireRateMul: 1.45 },
+  ],
+};
+
+// Pontuação e progressão de sessão (Etapa 3).
+export const SCORE = {
+  storageKey: 'tank3d.highscore.v1', // chave versionada no localStorage
+  enemyValue: { enemy: 100, default: 100 }, // pontos por tipo de inimigo
+  waveBonus: 250, // bônus por onda concluída (x número da onda)
+  accuracyBonus: 500, // bônus máximo por precisão (100% de acertos)
+};
+
 export const FIXED_STEP = 1 / 60;
