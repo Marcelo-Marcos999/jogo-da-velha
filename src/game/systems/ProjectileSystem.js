@@ -4,10 +4,10 @@
 import * as THREE from 'three';
 
 export class ProjectileSystem {
-  constructor(scene, arena, healthSystem, eventBus) {
+  constructor(scene, arena, damageSystem, eventBus) {
     this.scene = scene;
     this.arena = arena;
-    this.healthSystem = healthSystem;
+    this.damageSystem = damageSystem;
     this.eventBus = eventBus;
     this.projectiles = [];
     this.impacts = [];
@@ -40,7 +40,7 @@ export class ProjectileSystem {
           const dz = tank.position.z - p.position.z;
           const rr = tank.radius + p.radius;
           if (dx * dx + dz * dz <= rr * rr) {
-            this.healthSystem.applyDamage(tank, p.damage, p.owner);
+            this.damageSystem.applyDamage(tank, p.damage, p.owner);
             this._spawnImpact(p.position);
             dead = true;
             break;
