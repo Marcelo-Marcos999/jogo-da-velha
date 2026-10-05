@@ -1,0 +1,193 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0f14;
+  color: #e8eef5;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.game-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.game-container canvas {
+  display: block;
+  cursor: crosshair;
+}
+
+/* ---- HUD ---- */
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hud-top {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hud-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 150px;
+  padding: 10px 14px;
+  background: rgba(12, 18, 26, 0.72);
+  border: 1px solid rgba(120, 160, 200, 0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+
+.hud-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #8fa6bd;
+}
+
+.hud-value {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.hud-value.big {
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+.health-bar {
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.health-fill {
+  height: 100%;
+  transition: width 0.15s linear;
+}
+
+.health-fill.ok {
+  background: #4caf50;
+}
+
+.health-fill.warn {
+  background: #ffb300;
+}
+
+.health-fill.danger {
+  background: #e53935;
+}
+
+.reload-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.reload-fill {
+  height: 100%;
+  background: #42a5f5;
+  transition: width 0.1s linear;
+}
+
+.hud-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #b9c9d8;
+  background: rgba(12, 18, 26, 0.6);
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ---- Overlays ---- */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  background: rgba(6, 10, 15, 0.72);
+  pointer-events: auto;
+}
+
+.overlay h1 {
+  margin: 0;
+  font-size: 44px;
+  letter-spacing: 6px;
+  color: #7fd18a;
+}
+
+.overlay h2 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 3px;
+}
+
+.overlay.danger h2 {
+  color: #ef5350;
+}
+
+.overlay p {
+  margin: 0;
+  max-width: 460px;
+  color: #a9bccd;
+}
+
+.btn {
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #0b0f14;
+  background: #7fd18a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease;
+}
+
+.btn:hover {
+  background: #9be3a5;
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
