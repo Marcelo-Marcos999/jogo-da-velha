@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { GAME_STATES } from '../game/config.js';
+import Scoreboard from './Scoreboard.jsx';
 
 const STATE_LABEL = {
   [GAME_STATES.MENU]: 'Menu',
@@ -9,7 +10,7 @@ const STATE_LABEL = {
   [GAME_STATES.DERROTA]: 'Destruído',
 };
 
-const Hud = ({ hud, onStart, onResume, onRestart }) => {
+const Hud = ({ hud, onStart, onResume, onRestart, onPause }) => {
   const {
     state,
     health,
@@ -18,11 +19,21 @@ const Hud = ({ hud, onStart, onResume, onRestart }) => {
     magazine,
     reloading,
     reloadProgress,
-    enemies = 0,
+    enemiesRemaining = 0,
+    wave = 0,
+    totalWaves = 0,
+    countdown = 0,
+    score = 0,
+    highScore = 0,
+    accuracy = 0,
+    aimValid = false,
+    isMobile = false,
     lastHitAt = 0,
   } = hud;
   const healthPct = maxHealth > 0 ? Math.max(0, (health / maxHealth) * 100) : 0;
   const healthClass = healthPct > 60 ? 'ok' : healthPct > 30 ? 'warn' : 'danger';
+  const reloadPct = Math.round(Math.max(0, Math.min(1, reloadProgress)) * 100);
+  const playing = state === GAME_STATES.JOGANDO;
 
   // Flash/vinheta ao receber dano: dispara quando lastHitAt muda.
   const [hitFlash, setHitFlash] = useState(false);
