@@ -1,10 +1,12 @@
 // Criação da cena, câmera, luzes, renderizador e resize responsivo.
 
 import * as THREE from 'three';
+import { QUALITY } from '../config.js';
 
 export class Renderer {
-  constructor(container) {
+  constructor(container, { quality = QUALITY.levels.alta } = {}) {
     this.container = container;
+    this.quality = quality;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x10161f);
@@ -18,8 +20,8 @@ export class Renderer {
       antialias: true,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality.pixelRatioCap || 2));
+    this.renderer.shadowMap.enabled = quality.shadows !== false;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     if ('outputColorSpace' in this.renderer) {
       this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -68,10 +70,21 @@ export class Renderer {
     this.scene.add(ambient);
   }
 
+  // Ajusta a qualidade em tempo real (sombras, pixel ratio).
+  applyQuality(quality) {
+    this.quality = quality;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality.pixelRatioCap || 2));
+    this.renderer.shadowMap.enabled = quality.shadows !== false;
+    this.resize();
+  }
+
   resize() {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
     this.camera.aspect = w / h;
+    // Telas pequenas/estreitas ganham FOV maior para manter a legibilidade.
+    const narrow = w < 720 || w / h < 1;
+    this.camera.fov = narrow ? 64 : 55;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(w, h, false);
   }

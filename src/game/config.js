@@ -112,3 +112,38 @@ export const SCORE = {
 };
 
 export const FIXED_STEP = 1 / 60;
+
+// Efeitos visuais (Etapa 4). Intensidades multiplicam a quantidade de
+// partículas; decals têm limite e reciclagem para não acumular.
+export const FX = {
+  particleIntensity: 1, // multiplicador global de partículas
+  screenShake: true, // tremor de câmera ao receber dano (on/off)
+  screenShakeScale: 0.35, // intensidade máxima do tremor (unidades de mundo)
+  maxParticles: 260, // limite simultâneo de partículas vivas
+  maxDecals: 40, // limite de marcas de impacto; as antigas são recicladas
+  muzzleFlashTime: 0.06, // duração do flash de disparo (s)
+  barrelRecoilTime: 0.18, // duração do recuo do cano (s)
+  smokeTrailInterval: 0.045, // intervalo entre puffs do rastro do projétil (s)
+  hitFlashTime: 0.12, // duração do flash de cor em inimigos atingidos (s)
+  explosionTime: 0.9, // duração da animação de destruição (s)
+  storageKey: 'tank3d.fx.v1', // preferências persistidas (shake on/off)
+};
+
+// Áudio (Etapa 4): sons 100% sintetizados via Web Audio API, sem arquivos.
+export const AUDIO = {
+  storageKey: 'tank3d.audio.v1',
+  defaultVolume: 0.7,
+};
+
+// Qualidade gráfica: baixa/média/alta. Em mobile detectamos automaticamente e
+// reduzimos partículas, sombras e pixel ratio.
+export const QUALITY = {
+  levels: {
+    baixa: { particleMul: 0.45, shadows: false, pixelRatioCap: 1, maxDecals: 20 },
+    media: { particleMul: 0.75, shadows: true, pixelRatioCap: 1.5, maxDecals: 30 },
+    alta: { particleMul: 1, shadows: true, pixelRatioCap: 2, maxDecals: 40 },
+  },
+  // Mobile começa em média; o usuário pode trocar via HUD (futuro).
+  mobileDefault: 'media',
+  desktopDefault: 'alta',
+};

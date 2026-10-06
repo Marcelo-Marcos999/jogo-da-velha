@@ -753,3 +753,75 @@ body,
     font-size: 20px;
   }
 }
+
+/* ---- Etapa 4: feedback de arma, pontuação e áudio ---- */
+
+.weapon-feedback {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translateX(-50%);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: clamp(0.62rem, 1.6vw, 0.8rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  animation: weapon-feedback-pulse 1s ease-in-out infinite;
+}
+
+.weapon-feedback.reloading {
+  color: #ffe082;
+  background: rgba(120, 90, 20, 0.35);
+  border: 1px solid rgba(255, 224, 130, 0.5);
+}
+
+.weapon-feedback.empty {
+  color: #ff8a80;
+  background: rgba(120, 30, 30, 0.4);
+  border: 1px solid rgba(255, 138, 128, 0.6);
+}
+
+@keyframes weapon-feedback-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.hud-chip.score {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.hud-chip.score.pop {
+  transform: scale(1.18);
+  box-shadow: 0 0 14px rgba(255, 214, 102, 0.75);
+}
+
+.hud-chip.audio {
+  gap: 0.35rem;
+}
+
+.audio-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.audio-volume {
+  width: 64px;
+  accent-color: #7fd1ff;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .audio-volume {
+    width: 46px;
+  }
+}

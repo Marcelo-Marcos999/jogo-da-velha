@@ -22,6 +22,8 @@ const Hud = ({
   onFire,
   onCameraPitch,
   onResetCamera,
+  onToggleMute,
+  onVolumeChange,
 }) => {
   const {
     state,
@@ -42,12 +44,26 @@ const Hud = ({
     isMobile = false,
     lastHitAt = 0,
     cameraPitch = 0,
+    elapsed = 0,
+    volume = 0.7,
+    muted = false,
   } = hud;
   const healthPct = maxHealth > 0 ? Math.max(0, (health / maxHealth) * 100) : 0;
   const healthClass = healthPct > 60 ? 'ok' : healthPct > 30 ? 'warn' : 'danger';
   const reloadPct = Math.round(Math.max(0, Math.min(1, reloadProgress)) * 100);
   const playing = state === GAME_STATES.JOGANDO;
   const accuracyPct = Math.round(Math.max(0, Math.min(1, accuracy)) * 100);
+  const outOfAmmo = !reloading && ammo <= 0;
+  const elapsedLabel = `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, '0')}`;
+
+  // Destaque ao ganhar pontos: dispara quando a pontuação aumenta.
+  const [scorePop, setScorePop] = useState(false);
+  useEffect(() => {
+    if (!score) return undefined;
+    setScorePop(true);
+    const id = setTimeout(() => setScorePop(false), 400);
+    return () => clearTimeout(id);
+  }, [score]);
 
   // Flash/vinheta ao receber dano: dispara quando lastHitAt muda.
   const [hitFlash, setHitFlash] = useState(false);
@@ -67,6 +83,13 @@ const Hud = ({
         <div className={`reticle${aimValid ? ' valid' : ''}`} aria-hidden="true">
           <span className="reticle-dot" />
           <span className="reticle-ring" />
+        </div>
+      )}
+
+      {/* Feedback de arma: recarregando / sem munição. */}
+      {playing && (reloading || outOfAmmo) && (
+        <div className={`weapon-feedback${outOfAmmo ? ' empty' : ' reloading'}`}>
+          {outOfAmmo ? 'SEM MUNIÇÃO' : `RECARREGANDO ${reloadPct}%`}
         </div>
       )}
 
@@ -112,7 +135,7 @@ const Hud = ({
           <span className="hud-value">{enemiesRemaining}</span>
         </div>
 
-        <div className="hud-chip score" title={`Pontuação: ${score}`}>
+        <div className={`hud-chip score${scorePop ? ' pop' : ''}`} title={`Pontuação: ${score}`}>
           <span className="hud-icon" aria-hidden="true">
             ★
           </span>
@@ -139,6 +162,27 @@ const Hud = ({
           >
             ↺
           </button>
+        </div>
+
+        <div className="hud-chip audio" title={muted ? 'Som desligado' : `Volume: ${Math.round(volume * 100)}%`}>
+          <button
+            type="button"
+            className="audio-toggle"
+            onClick={onToggleMute}
+            aria-label={muted ? 'Ativar som' : 'Silenciar'}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+          <input
+            type="range"
+            className="audio-volume"
+            min="0"
+            max="1"
+            step="0.05"
+            value={muted ? 0 : volume}
+            onChange={(e) => onVolumeChange(Number(e.target.value))}
+            aria-label="Volume"
+          />
         </div>
       </div>
 
@@ -219,6 +263,14 @@ const Hud = ({
               <span className="hud-value big">{score}</span>
             </div>
             <div className="overlay-stat">
+              <span className="hud-label">Onda</span>
+              <span className="hud-value">{wave}/{totalWaves}</span>
+            </div>
+            <div className="overlay-stat">
+              <span className="hud-label">Tempo</span>
+              <span className="hud-value">{elapsedLabel}</span>
+            </div>
+            <div className="overlay-stat">
               <span className="hud-label">Recorde</span>
               <span className="hud-value">{highScore}</span>
             </div>
@@ -241,6 +293,14 @@ const Hud = ({
             <div className="overlay-stat">
               <span className="hud-label">Pontuação</span>
               <span className="hud-value big">{score}</span>
+            </div>
+            <div className="overlay-stat">
+              <span className="hud-label">Onda</span>
+              <span className="hud-value">{wave}/{totalWaves}</span>
+            </div>
+            <div className="overlay-stat">
+              <span className="hud-label">Tempo</span>
+              <span className="hud-value">{elapsedLabel}</span>
             </div>
             <div className="overlay-stat">
               <span className="hud-label">Recorde</span>

@@ -23,6 +23,10 @@ const INITIAL_HUD = {
   isMobile: false,
   lastHitAt: 0,
   cameraPitch: 0,
+  elapsed: 0,
+  volume: 0.7,
+  muted: false,
+  quality: 'alta',
 };
 
 function App() {
@@ -80,6 +84,14 @@ function App() {
     gameRef.current?.resetCamera();
   }, []);
 
+  const handleToggleMute = useCallback(() => {
+    gameRef.current?.toggleMuted();
+  }, []);
+
+  const handleVolumeChange = useCallback((value) => {
+    gameRef.current?.setVolume(value);
+  }, []);
+
   return (
     <div className="app">
       <GameBoard ref={containerRef} />
@@ -94,6 +106,8 @@ function App() {
         onFire={handleFire}
         onCameraPitch={handleCameraPitch}
         onResetCamera={handleResetCamera}
+        onToggleMute={handleToggleMute}
+        onVolumeChange={handleVolumeChange}
       />
     </div>
   );

@@ -4,14 +4,21 @@
 // usam pool de objetos reciclados para não vazar memória.
 
 import * as THREE from 'three';
+import { FX, QUALITY } from '../config.js';
 
 const PARTICLE_GEO = new THREE.SphereGeometry(0.16, 6, 6);
 const BLAST_GEO = new THREE.SphereGeometry(1, 12, 12);
+const DECAL_GEO = new THREE.CircleGeometry(0.55, 10);
+const FLASH_GEO = new THREE.SphereGeometry(0.4, 8, 8);
 
 export class EffectsSystem {
-  constructor(scene, eventBus) {
+  // `camera` é opcional e usado apenas para o screen shake.
+  constructor(scene, eventBus, { camera = null, quality = QUALITY.levels.alta } = {}) {
     this.scene = scene;
     this.eventBus = eventBus;
+    this.camera = camera;
+    this.config = FX;
+    this.quality = quality;
 
     this._particles = []; // ativos
     this._particlePool = []; // reciclados
@@ -21,10 +28,18 @@ export class EffectsSystem {
     this._markerPool = [];
     this._flashes = [];
 
+    // Etapa 4: decals, muzzle flash, rastro de fumaça e screen shake.
+    this._decals = [];
+    this._decalPool = [];
+    this._muzzleFlashes = [];
+    this._trails = []; // projéteis com rastro ativo
+    this._shake = 0; // amplitude atual do tremor
+
     this._unsubs = [];
     this._unsubs.push(
       this.eventBus.on('impacto', ({ position, target }) => {
         this.spawnImpact(position, { hit: !!target });
+        if (!target) this.spawnDecal(position);
       }),
     );
     this._unsubs.push(
@@ -37,8 +52,144 @@ export class EffectsSystem {
         if (!tank) return;
         this.flashTank(tank);
         this.spawnDamageMarker(tank.position, amount);
+        // Tremor proporcional ao dano, apenas quando o jogador é atingido.
+        if (tank.team === 'player') this.addShake(amount / 100);
       }),
     );
+    this._unsubs.push(
+      this.eventBus.on('tiro', ({ tank, projectile }) => {
+        if (!tank) return;
+        this.spawnMuzzleFlash(tank);
+        if (projectile) this.attachTrail(projectile);
+        if (tank.team === 'player') this.addShake(0.06);
+      }),
+    );
+  }
+
+  // ---- Screen shake ---------------------------------------------------------
+
+  addShake(amount) {
+    if (!this.config.screenShake || !this.camera) return;
+    this._shake = Math.min(0.6, this._shake + amount * this.config.screenShakeScale);
+  }
+
+  _applyShake(dt) {
+    if (!this.camera) return;
+    if (this._shake > 0.001) {
+      const s = this._shake;
+      this.camera.position.x += (Math.random() * 2 - 1) * s;
+      this.camera.position.y += (Math.random() * 2 - 1) * s * 0.5;
+      this.camera.position.z += (Math.random() * 2 - 1) * s;
+      this._shake = Math.max(0, this._shake - dt * 1.6);
+    }
+  }
+
+  // ---- Muzzle flash + recuo do cano -----------------------------------------
+
+  spawnMuzzleFlash(tank) {
+    const yaw = tank.worldTurretYaw;
+    const dir = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw));
+    const pos = tank.position.clone().addScaledVector(dir, 2.9);
+    pos.y = 1.45;
+
+    const flash = this._particlePool.pop() || this._createParticle();
+    flash.mesh.position.copy(pos);
+    flash.mesh.material.color.setHex(0xfff176);
+    flash.mesh.material.opacity = 0.95;
+    flash.mesh.scale.setScalar(1.6);
+    flash.mesh.visible = true;
+    flash.velocity.set(0, 0, 0);
+    flash.gravity = 0;
+    flash.life = this.config.muzzleFlashTime;
+    flash.maxLife = this.config.muzzleFlashTime;
+    this.scene.add(flash.mesh);
+    this._particles.push(flash);
+
+    // Fumaça curta saindo do cano.
+    this._emitParticles(pos, 3, {
+      color: 0x9e9e9e,
+      speed: 2.2,
+      spread: 0.35,
+      life: 0.5,
+      gravity: -1.5, // sobe
+    });
+
+    // Recuo do cano (animação na entidade).
+    if (typeof tank.triggerRecoil === 'function') tank.triggerRecoil();
+  }
+
+  // ---- Rastro de fumaça do projétil -----------------------------------------
+
+  attachTrail(projectile) {
+    this._trails.push({ projectile, timer: 0 });
+  }
+
+  _updateTrails(dt) {
+    for (let i = this._trails.length - 1; i >= 0; i--) {
+      const trail = this._trails[i];
+      const p = trail.projectile;
+      if (!p.alive || p.life <= 0) {
+        this._trails.splice(i, 1);
+        continue;
+      }
+      trail.timer -= dt;
+      if (trail.timer <= 0) {
+        trail.timer = this.config.smokeTrailInterval;
+        this._emitParticles(p.position, 1, {
+          color: 0xbdbdbd,
+          speed: 0.6,
+          spread: 0.25,
+          life: 0.45,
+          gravity: -0.8, // fumaça sobe levemente
+        });
+      }
+    }
+  }
+
+  // ---- Decals (marcas de impacto) -------------------------------------------
+
+  spawnDecal(position) {
+    const max = this.quality.maxDecals ?? this.config.maxDecals;
+    let decal = this._decalPool.pop();
+    if (!decal && this._decals.length >= max) {
+      // Recicla o mais antigo.
+      decal = this._decals.shift();
+    }
+    if (!decal) decal = this._createDecal();
+
+    decal.mesh.position.set(position.x, 0.03, position.z);
+    decal.mesh.rotation.set(-Math.PI / 2, 0, Math.random() * Math.PI * 2);
+    decal.mesh.material.opacity = 0.75;
+    decal.mesh.scale.setScalar(0.7 + Math.random() * 0.6);
+    decal.mesh.visible = true;
+    decal.life = 6;
+    this.scene.add(decal.mesh);
+    this._decals.push(decal);
+  }
+
+  _updateDecals(dt) {
+    for (let i = this._decals.length - 1; i >= 0; i--) {
+      const d = this._decals[i];
+      d.life -= dt;
+      if (d.life < 1.5) d.mesh.material.opacity = Math.max(0, d.life / 1.5) * 0.75;
+      if (d.life <= 0) {
+        this.scene.remove(d.mesh);
+        d.mesh.visible = false;
+        this._decalPool.push(d);
+        this._decals.splice(i, 1);
+      }
+    }
+  }
+
+  _createDecal() {
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x1a1a1a,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(DECAL_GEO, material);
+    return { mesh, life: 6 };
   }
 
   // ---- Faíscas / impacto ---------------------------------------------------
@@ -52,6 +203,23 @@ export class EffectsSystem {
       life: 0.35,
       gravity: 14,
     });
+    if (!hit) {
+      // Fumaça e detritos ao acertar obstáculos/paredes.
+      this._emitParticles(position, 3, {
+        color: 0x8d8d8d,
+        speed: 1.8,
+        spread: 0.4,
+        life: 0.6,
+        gravity: -1.2,
+      });
+      this._emitParticles(position, 4, {
+        color: 0x6d4c41,
+        speed: 5,
+        spread: 0.7,
+        life: 0.5,
+        gravity: 16,
+      });
+    }
   }
 
   // ---- Explosão ------------------------------------------------------------
@@ -70,6 +238,22 @@ export class EffectsSystem {
       spread: 0.8,
       life: 0.5,
       gravity: 6,
+    });
+
+    // Fumaça e detritos da explosão.
+    this._emitParticles(position, 8, {
+      color: 0x616161,
+      speed: 3,
+      spread: 0.9,
+      life: 1.1,
+      gravity: -1.6,
+    });
+    this._emitParticles(position, 6, {
+      color: 0x4e342e,
+      speed: 8,
+      spread: 1,
+      life: 0.8,
+      gravity: 14,
     });
 
     const blast = this._blastPool.pop() || this._createBlast();
@@ -137,6 +321,9 @@ export class EffectsSystem {
     this._updateBlasts(dt);
     this._updateMarkers(dt);
     this._updateFlashes(dt);
+    this._updateTrails(dt);
+    this._updateDecals(dt);
+    this._applyShake(dt);
   }
 
   _updateParticles(dt) {
@@ -207,7 +394,12 @@ export class EffectsSystem {
   // ---- Pool ----------------------------------------------------------------
 
   _emitParticles(position, count, { color, speed, spread, life, gravity }) {
-    for (let i = 0; i < count; i++) {
+    // Limita a quantidade conforme qualidade gráfica e teto global.
+    const mul = this.quality.particleMul ?? 1;
+    const max = this.config.maxParticles;
+    let n = Math.max(1, Math.round(count * mul * this.config.particleIntensity));
+    if (this._particles.length + n > max) n = Math.max(0, max - this._particles.length);
+    for (let i = 0; i < n; i++) {
       const p = this._particlePool.pop() || this._createParticle();
       p.mesh.position.copy(position);
       p.mesh.material.color.setHex(color);
@@ -294,6 +486,15 @@ export class EffectsSystem {
       }
     }
     this._flashes.length = 0;
+
+    for (const d of this._decals) {
+      this.scene.remove(d.mesh);
+      d.mesh.visible = false;
+      this._decalPool.push(d);
+    }
+    this._decals.length = 0;
+    this._trails.length = 0;
+    this._shake = 0;
   }
 
   dispose() {
@@ -310,5 +511,7 @@ export class EffectsSystem {
       m.material.dispose();
     }
     this._markerPool.length = 0;
+    for (const d of this._decalPool) d.mesh.material.dispose();
+    this._decalPool.length = 0;
   }
 }

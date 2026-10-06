@@ -18,9 +18,10 @@ import { CameraRig } from '../systems/CameraRig.js';
 import { WaveSystem } from '../systems/WaveSystem.js';
 import { ScoreSystem } from '../systems/ScoreSystem.js';
 import { EffectsSystem } from '../systems/EffectsSystem.js';
+import { AudioSystem } from '../systems/AudioSystem.js';
 import { GameState } from './GameState.js';
 import { DeviceDetector } from './DeviceDetector.js';
-import { GAME_STATES, TANK_PROFILES, FIXED_STEP } from '../config.js';
+import { GAME_STATES, TANK_PROFILES, FIXED_STEP, QUALITY } from '../config.js';
 
 export class Game {
   constructor(container, options = {}) {
@@ -28,7 +29,14 @@ export class Game {
     this.options = options;
 
     this.eventBus = new EventBus();
-    this.renderer = new Renderer(container);
+
+    // Detecção de dispositivo antes do renderer: define a qualidade inicial.
+    this.deviceDetector = new DeviceDetector(this.eventBus);
+    this.isMobile = this.deviceDetector.isMobile;
+    this.qualityName = this.isMobile ? QUALITY.mobileDefault : QUALITY.desktopDefault;
+    this.quality = QUALITY.levels[this.qualityName];
+
+    this.renderer = new Renderer(container, { quality: this.quality });
 
     // O CameraRig é criado antes do Input (que o usa para ajustar o pitch) e
     // antes dos demais sistemas que dependem da câmera.
@@ -64,13 +72,15 @@ export class Game {
       eventBus: this.eventBus,
     });
     this.scoreSystem = new ScoreSystem(this.eventBus);
-    this.effectsSystem = new EffectsSystem(this.renderer.scene, this.eventBus);
+    this.effectsSystem = new EffectsSystem(this.renderer.scene, this.eventBus, {
+      camera: this.renderer.camera,
+      quality: this.quality,
+    });
+    this.audioSystem = new AudioSystem(this.eventBus);
     this.gameState = new GameState(GAME_STATES.MENU);
-    this.deviceDetector = new DeviceDetector(this.eventBus);
 
     this.tanks = [];
     this.player = null;
-    this.isMobile = this.deviceDetector.isMobile;
     this._score = { score: 0, highScore: this.scoreSystem.highScore, accuracy: 0, kills: 0 };
 
     this._raf = null;
@@ -85,6 +95,8 @@ export class Game {
     this._unsubs.push(
       this.gameState.onChange((next) => {
         this._onStateChange(next);
+        if (next === GAME_STATES.VITORIA) this.eventBus.emit('jogo:vitoria', {});
+        else if (next === GAME_STATES.DERROTA) this.eventBus.emit('jogo:derrota', {});
         this._emitHud();
       }),
     );
@@ -126,6 +138,15 @@ export class Game {
 
     this._loop = this._loop.bind(this);
 
+    // Áudio só pode iniciar após a primeira interação do usuário.
+    this._unlockAudio = () => this.audioSystem.unlock();
+    window.addEventListener('pointerdown', this._unlockAudio);
+    window.addEventListener('keydown', this._unlockAudio);
+    window.addEventListener('touchstart', this._unlockAudio, { passive: true });
+
+    this._startedAt = 0;
+    this._elapsed = 0;
+
     // Cria o mundo inicial (visível no MENU).
     this._resetWorld();
   }
@@ -154,11 +175,15 @@ export class Game {
 
   dispose() {
     this.stop();
+    window.removeEventListener('pointerdown', this._unlockAudio);
+    window.removeEventListener('keydown', this._unlockAudio);
+    window.removeEventListener('touchstart', this._unlockAudio);
     for (const unsub of this._unsubs) unsub();
     this._unsubs.length = 0;
     this.projectileSystem.clear();
     this.enemySystem.clear();
     this.effectsSystem.dispose();
+    this.audioSystem.dispose();
     this.waveSystem.dispose();
     this.scoreSystem.dispose();
     this.deviceDetector.dispose();
@@ -179,8 +204,27 @@ export class Game {
   startGame() {
     this._resetWorld();
     this.scoreSystem.start();
+    this._startedAt = performance.now();
+    this._elapsed = 0;
     this.gameState.set(GAME_STATES.JOGANDO);
     this.waveSystem.start(this.player);
+    this._emitHud();
+  }
+
+  // ---- Áudio (controles do HUD) --------------------------------------------
+
+  setVolume(value) {
+    this.audioSystem.setVolume(value);
+    this._emitHud();
+  }
+
+  setMuted(muted) {
+    this.audioSystem.setMuted(muted);
+    this._emitHud();
+  }
+
+  toggleMuted() {
+    this.audioSystem.toggleMuted();
     this._emitHud();
   }
 
@@ -315,6 +359,9 @@ export class Game {
   // ---- HUD -----------------------------------------------------------------
 
   _updateHud(delta) {
+    if (this._startedAt && this.gameState.is(GAME_STATES.JOGANDO)) {
+      this._elapsed = (performance.now() - this._startedAt) / 1000;
+    }
     this._hudAccumulator += delta;
     if (this._hudAccumulator < 0.1) return;
     this._hudAccumulator = 0;
@@ -358,6 +405,10 @@ export class Game {
       isMobile: this.isMobile,
       lastHitAt: this._lastHitAt,
       cameraPitch: Math.round(this.cameraRig.getPitch()),
+      elapsed: this._elapsed,
+      volume: this.audioSystem.volume,
+      muted: this.audioSystem.muted,
+      quality: this.qualityName,
     });
   }
 }
