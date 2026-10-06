@@ -66,6 +66,7 @@ export class ProjectileSystem {
   _removeProjectile(index) {
     const p = this.projectiles[index];
     this.scene.remove(p.mesh);
+    p.alive = false;
     p.dispose();
     this.projectiles.splice(index, 1);
   }
@@ -73,6 +74,7 @@ export class ProjectileSystem {
   clear() {
     for (const p of this.projectiles) {
       this.scene.remove(p.mesh);
+      p.alive = false;
       p.dispose();
     }
     this.projectiles.length = 0;
